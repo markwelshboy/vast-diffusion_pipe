@@ -63,7 +63,7 @@ export_env_vars() {
     #  - HF_* and cache-related vars
     #  - ports for all the UIs
     #  - PATH for convenience
-    printenv | grep -E '^(VAST_|RUNPOD_|HF_|PIP_CACHE_DIR=|UV_CACHE_DIR=|VIRTUALENV_OVERRIDE_APP_DATA=|CTRL_PNL_PORT=|FLUXGYM_PORT=|DIFFUSION_PIPE_UI_PORT=|KOHYA_UI_PORT=|TENSORBOARD_PORT=|COMFYUI_PORT=|JUPYTER_PORT=|PATH=|_=)' \
+    printenv | grep -E '^(VAST_|RUNPOD_|HF_|NETWORK_VOLUME=|PIP_CACHE_DIR=|UV_CACHE_DIR=|VIRTUALENV_OVERRIDE_APP_DATA=|CTRL_PNL_PORT=|FLUXGYM_PORT=|DIFFUSION_PIPE_UI_PORT=|KOHYA_UI_PORT=|TENSORBOARD_PORT=|COMFYUI_PORT=|JUPYTER_PORT=|PATH=|_=)' \
     | while IFS='=' read -r key val; do
         printf 'export %s=%q\n' "$key" "$val"
     done >> "$outfile"
@@ -79,7 +79,6 @@ mkdir -p "$(dirname "$LOG_FILE")"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 setup_ssh
-export_env_vars
 
 # Use libtcmalloc for better memory management
 TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\d" | head -n 1)"
@@ -98,6 +97,8 @@ fi
 export NETWORK_VOLUME
 
 echo "cd $NETWORK_VOLUME" >> /root/.bashrc
+
+export_env_vars
 
 #cd "$NETWORK_VOLUME/diffusion_pipe_working_folder/diffusion-pipe" || exit 1
 #git pull || true
@@ -393,6 +394,9 @@ pip install transformers -U
 
 echo "Installing huggingface-cli..."
 pip install --upgrade "huggingface_hub[cli]"
+
+echo "Installing hf_transfer..."
+pip install "hf_transfer"
 
 echo "Upgrading peft package..."
 pip install --upgrade "peft>=0.17.0"
