@@ -2,6 +2,7 @@
 
 # Determine which branch to clone based on environment variables
 BRANCH="main"  # Default branch
+is_dev=${DEV_MODE:-"false"}
 
 if [ "$is_dev" == "true" ]; then
     BRANCH="dev"
@@ -27,6 +28,8 @@ if [ $? -ne 0 ]; then
         exit 1
     fi
 fi
+
+mkdir -p /workspace
 
 # Move start.sh to root and execute it
 mv /tmp/vast-diffusion_pipe/src/start.sh /
