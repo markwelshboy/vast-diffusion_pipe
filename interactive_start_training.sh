@@ -537,9 +537,9 @@ case $MODEL_TYPE in
             print_warning "wan14b_i2v.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_i2v.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/wan14b_i2v.toml"
         fi
-        print_info "Starting Wan 14B I2V model download in background..."
-        mkdir -p "$NETWORK_VOLUME/models/Wan/Wan2.1-I2V-14B-480P"
-        hf download Wan-AI/Wan2.1-I2V-14B-480P --local-dir "$NETWORK_VOLUME/models/Wan/Wan2.1-I2V-14B-480P" > "$NETWORK_VOLUME/logs/model_download.log" 2>&1 &
+        print_info "Starting Wan2.2 14B I2V model download in background...(log: $NETWORK_VOLUME/logs/model_download.log)"
+        mkdir -p "$NETWORK_VOLUME/models/Wan/Wan2.2-I2V-A14B"
+        hf download Wan-AI/Wan2.2-I2V-A14B --local-dir "$NETWORK_VOLUME/models/Wan/Wan2.2-I2V-A14B" > "$NETWORK_VOLUME/logs/model_download.log" 2>&1 &
         MODEL_DOWNLOAD_PID=$!
         ;;
 
@@ -756,8 +756,8 @@ if [ -n "$MODEL_DOWNLOAD_PID" ]; then
             fi
             ;;
         "wan14b_i2v")
-            if [ ! -d "$NETWORK_VOLUME/models/Wan/Wan2.1-I2V-14B-480P" ] || [ -z "$(ls -A "$NETWORK_VOLUME/models/Wan/Wan2.1-I2V-14B-480P" 2>/dev/null)" ]; then
-                print_error "Wan 14B I2V model files not found after download. Check log: $NETWORK_VOLUME/logs/model_download.log"
+            if [ ! -d "$NETWORK_VOLUME/models/Wan/Wan2.2-I2V-A14B" ] || [ -z "$(ls -A "$NETWORK_VOLUME/models/Wan/Wan2.2-I2V-A14B" 2>/dev/null)" ]; then
+                print_error "Wan2.2 14B I2V model files not found after download. Check log: $NETWORK_VOLUME/logs/model_download.log"
                 exit 1
             fi
             ;;
