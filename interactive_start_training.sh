@@ -374,7 +374,7 @@ try:
         print("\nCUDA is not available on this system.")
         print("This script requires CUDA to run.")
         print("\nSOLUTION:")
-        print("  Please deploy with CUDA 12.8 when selecting your GPU on RunPod")
+        print("  Please deploy with CUDA 12.8 when selecting your GPU on Vast.ai")
         print("  This template requires CUDA 12.8")
         print("\n" + "="*70)
         sys.exit(1)
@@ -392,7 +392,7 @@ except RuntimeError as e:
         print("  1. Use a newer GPU model (recommended):")
         print("     • H100 or H200 GPUs are recommended for best compatibility")
         print("  2. Ensure correct CUDA version:")
-        print("     • Filter for CUDA 12.8 when selecting your GPU on RunPod")
+        print("     • Filter for CUDA 12.8 when selecting your GPU on Vast.ai")
         print("     • This template requires CUDA 12.8")
         print("\n" + "="*70)
         sys.exit(1)
@@ -433,13 +433,13 @@ case $MODEL_TYPE in
             print_info "flux.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/flux_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/flux.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/flux.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/flux.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/flux_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/flux.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/flux.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/flux_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/flux.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/flux.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved flux.toml to examples directory"
         else
-            print_warning "flux.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/flux.toml"
+            print_warning "flux.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/flux.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/flux.toml"
         fi
         print_info "Starting Flux model download in background..."
@@ -457,13 +457,13 @@ case $MODEL_TYPE in
             print_info "sdxl.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/sdxl_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/sdxl.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/sdxl.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/sdxl.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/sdxl_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/sdxl.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/sdxl.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/sdxl_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/sdxl.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/sdxl.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved sdxl.toml to examples directory"
         else
-            print_warning "sdxl.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/sdxl.toml"
+            print_warning "sdxl.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/sdxl.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/sdxl.toml"
         fi
         print_info "Starting Base SDXL model download in background..."
@@ -480,13 +480,13 @@ case $MODEL_TYPE in
             print_info "wan13_video.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan13_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/wan13_video.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan13_video.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan13_video.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan13_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan13_video.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan13_video.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan13_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan13_video.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan13_video.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved wan13_video.toml to examples directory"
         else
-            print_warning "wan13_video.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan13_video.toml"
+            print_warning "wan13_video.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan13_video.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/wan13_video.toml"
         fi
         print_info "Starting Wan 1.3B model download in background..."
@@ -504,13 +504,13 @@ case $MODEL_TYPE in
             print_info "wan14b_t2v.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_t2v_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/wan14b_t2v.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_t2v.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_t2v.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_t2v_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_t2v.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_t2v.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_t2v_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_t2v.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_t2v.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved wan14b_t2v.toml to examples directory"
         else
-            print_warning "wan14b_t2v.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_t2v.toml"
+            print_warning "wan14b_t2v.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_t2v.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/wan14b_t2v.toml"
         fi
         print_info "Starting Wan 14B T2V model download in background..."
@@ -528,13 +528,13 @@ case $MODEL_TYPE in
             print_info "wan14b_i2v.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_i2v_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/wan14b_i2v.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_i2v.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_i2v.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_i2v_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_i2v.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_i2v.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/wan14b_i2v_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_i2v.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_i2v.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved wan14b_i2v.toml to examples directory"
         else
-            print_warning "wan14b_i2v.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/wan14b_i2v.toml"
+            print_warning "wan14b_i2v.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/wan14b_i2v.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/wan14b_i2v.toml"
         fi
         print_info "Starting Wan 14B I2V model download in background..."
@@ -552,13 +552,13 @@ case $MODEL_TYPE in
             print_info "qwen_toml.toml already exists in examples directory"
             # Update output_dir even if file already exists
             sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/qwen_lora'|" "$NETWORK_VOLUME/diffusion_pipe/examples/qwen_toml.toml"
-        elif [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/qwen_toml.toml" ]; then
+        elif [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/qwen_toml.toml" ]; then
             # Update output_dir before moving
-            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/qwen_lora'|" "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/qwen_toml.toml"
-            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/qwen_toml.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+            sed -i "s|^output_dir = .*|output_dir = '$NETWORK_VOLUME/output_folder/qwen_lora'|" "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/qwen_toml.toml"
+            mv "$NETWORK_VOLUME/vast-diffusion_pipe/toml_files/qwen_toml.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
             print_success "Moved qwen_toml.toml to examples directory"
         else
-            print_warning "qwen_toml.toml not found at expected location: $NETWORK_VOLUME/runpod-diffusion_pipe/toml_files/qwen_toml.toml"
+            print_warning "qwen_toml.toml not found at expected location: $NETWORK_VOLUME/vast-diffusion_pipe/toml_files/qwen_toml.toml"
             print_warning "Please ensure the file exists or manually copy it to: $NETWORK_VOLUME/diffusion_pipe/examples/qwen_toml.toml"
         fi
         print_info "Starting Qwen Image model download in background..."
