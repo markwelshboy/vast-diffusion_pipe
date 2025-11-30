@@ -395,8 +395,10 @@ pip install transformers -U
 echo "Installing huggingface-cli..."
 pip install --upgrade "huggingface_hub[cli]"
 
-echo "Installing hf_transfer..."
-pip install "hf_transfer"
+#echo "Installing hf_transfer..."
+#pip install "hf_transfer"
+
+unset HF_HUB_ENABLE_HF_TRANSFER
 
 echo "Upgrading peft package..."
 pip install --upgrade "peft>=0.17.0"
