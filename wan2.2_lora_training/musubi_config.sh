@@ -2,7 +2,7 @@
 
 # ====== Wan 2.2 Config File ======
 # LoRA rank drives both network_dim and network_alpha
-LORA_RANK=16
+LORA_RANK=32
 
 # training schedule
 MAX_EPOCHS=100
@@ -13,21 +13,21 @@ SEED_HIGH=41
 SEED_LOW=42
 
 # optimizer
-LEARNING_RATE=3e-4
+LEARNING_RATE=2e-4
 
 # dataset: "video" or "image"
 DATASET_TYPE=image
 
 # resolution list for bucketed training (must be TOML-ish array)
 # e.g. [896, 1152] or [1024, 1024]
-RESOLUTION_LIST="1024, 1024"
+RESOLUTION_LIST="512, 512"
 
 # common dataset paths (adjust if you keep data elsewhere)
 DATASET_DIR="$NETWORK_VOLUME/image_dataset_here"
 
 # Select LoRA Names
-TITLE_HIGH="Your High Noise LoRA Name Here"
-TITLE_LOW="Your Low Noise LoRA Name Here"
+TITLE_HIGH="5H1V_HIGH_R32_LR0002"
+TITLE_LOW="5H1V_LOW_R32_LR0002"
 
 # ---- IMAGE options (used only when DATASET_TYPE=image) ----
 BATCH_SIZE=1

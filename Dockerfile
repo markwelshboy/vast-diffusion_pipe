@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Faster transfer of models from the hub to the container
 #ENV HF_HUB_ENABLE_HF_TRANSFER="1"
 # Set Default Python Version
-ENV PYTHON_VERSION="3.12"
+#ENV PYTHON_VERSION="3.12"
 
 WORKDIR /
 

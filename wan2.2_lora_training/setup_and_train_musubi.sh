@@ -151,25 +151,27 @@ MODELS_DIR="$WORKDIR/models"
 
 WAN_VAE="$MODELS_DIR/vae/split_files/vae/wan_2.1_vae.safetensors"
 WAN_T5="$MODELS_DIR/text_encoders/models_t5_umt5-xxl-enc-bf16.pth"
-WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors"
-WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
+WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp16.safetensors"
+WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp16.safetensors"
+#WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors"
+#WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
 
 OUT_HIGH="$WORKDIR/output/high"
 OUT_LOW="$WORKDIR/output/low"
 TITLE_HIGH="${TITLE_HIGH:-Wan2.2_model_lora}"
 TITLE_LOW="${TITLE_LOW:-Wan2.2_model_lora}"
-AUTHOR="${AUTHOR:-HearmemanAI}"
+AUTHOR="${AUTHOR:-markwelshboy}"
 
 SETUP_MARKER="$REPO_DIR/.setup_done"
 
 # Config-driven knobs (with safe defaults)
-LORA_RANK="${LORA_RANK:-16}"
+LORA_RANK="${LORA_RANK:-32}"
 MAX_EPOCHS="${MAX_EPOCHS:-100}"
 SAVE_EVERY="${SAVE_EVERY:-25}"
 SEED_HIGH="${SEED_HIGH:-41}"
 SEED_LOW="${SEED_LOW:-42}"
-LEARNING_RATE="${LEARNING_RATE:-3e-4}"
-DATASET_TYPE="${DATASET_TYPE:-video}"
+LEARNING_RATE="${LEARNING_RATE:-2e-4}"
+DATASET_TYPE="${DATASET_TYPE:-image}"
 
 # Video/image specific defaults if missing
 CAPTION_EXT="${CAPTION_EXT:-.txt}"
@@ -227,10 +229,14 @@ if [ ! -f "$SETUP_MARKER" ] || [ "$FORCE_SETUP" = "1" ]; then
     --local-dir "$MODELS_DIR/text_encoders"
   hf download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/vae/wan_2.1_vae.safetensors \
     --local-dir "$MODELS_DIR/vae"
-  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors \
+  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp16.safetensors \
     --local-dir "$MODELS_DIR/diffusion_models"
-  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors \
+  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp16.safetensors \
     --local-dir "$MODELS_DIR/diffusion_models"
+  #hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors \
+  #  --local-dir "$MODELS_DIR/diffusion_models"
+  #hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors \
+  #  --local-dir "$MODELS_DIR/diffusion_models"
 
   touch "$SETUP_MARKER"
   echo ">>> Setup complete."
@@ -324,21 +330,24 @@ mkdir -p "$OUT_HIGH" "$OUT_LOW"
 echo ">>> Launching training with:"
 echo "    rank=$LORA_RANK, max_epochs=$MAX_EPOCHS, save_every=$SAVE_EVERY, lr=$LEARNING_RATE"
 
+#FP8="--fp8_base"
+FP8=""
+
 COMMON_FLAGS=(
-  --task t2v-A14B
-  --vae "$WAN_VAE"
-  --t5 "$WAN_T5"
-  --dataset_config "$DATASET_TOML"
-  --xformers --mixed_precision fp16 --fp8_base
+  --task i2v-A14B
+  --vae "${WAN_VAE}"
+  --t5 "${WAN_T5}"
+  --dataset_config "${DATASET_TOML}"
+  --xformers --mixed_precision fp16 "${FP8}"
   --optimizer_type adamw --optimizer_args weight_decay=0.1
-  --learning_rate "$LEARNING_RATE"
+  --learning_rate "${LEARNING_RATE}"
   --gradient_checkpointing --gradient_accumulation_steps 1
   --max_data_loader_n_workers 2
-  --network_module networks.lora_wan --network_dim "$LORA_RANK" --network_alpha "$LORA_RANK"
+  --network_module networks.lora_wan --network_dim "${LORA_RANK}" --network_alpha "${LORA_RANK}"
   --timestep_sampling shift --discrete_flow_shift 1.0
   --max_grad_norm 0
   --lr_scheduler polynomial --lr_scheduler_power 8 --lr_scheduler_min_lr_ratio "5e-5"
-  --max_train_epochs "$MAX_EPOCHS" --save_every_n_epochs "$SAVE_EVERY"
+  --max_train_epochs "${MAX_EPOCHS}" --save_every_n_epochs "${SAVE_EVERY}"
 )
 
 if [ "${GPU_COUNT}" -ge 2 ]; then
