@@ -1,6 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+install_sage_from_source() {
+  # CC via torch
+  local CC_TORCH
+  CC_TORCH="$("$PY" - << 'PY'
+import torch
+maj,minr = torch.cuda.get_device_capability(0) if torch.cuda.is_available() else (0,0)
+print(f"{maj}.{minr}")
+PY
+  )"
+  echo "Detected GPU compute capability: ${CC_TORCH}" >&2
+
+  # Toolchain for CUDA 12.x
+  unset CC CXX SAGE_CUDA_ARCH_LIST SAGE_GENCODE CUDA_ARCH_LIST
+  if ! command -v g++-12 >/dev/null; then
+    apt-get update && apt-get install -y gcc-12 g++-12
+  fi
+  export CC=/usr/bin/gcc-12
+  export CXX=/usr/bin/g++-12
+
+  # Arch list
+  case "$CC_TORCH" in
+    12.*) export TORCH_CUDA_ARCH_LIST="12.0;8.9;8.6;8.0" ;;
+    9.*)  export TORCH_CUDA_ARCH_LIST="9.0;8.9;8.6;8.0"  ;;
+    8.9)  export TORCH_CUDA_ARCH_LIST="8.9;8.6;8.0"      ;;
+    8.*)  export TORCH_CUDA_ARCH_LIST="8.6;8.0"          ;;
+    *)    export TORCH_CUDA_ARCH_LIST="8.0"              ;;
+  esac
+  echo "TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}" >&2
+
+  # Clean + build (NO build isolation, so setup can import torch)
+  echo "Clonging SageAttention, repo=https://github.com/thu-ml/SageAttention.git" >&2
+  rm -rf /tmp/SageAttention
+  git clone https://github.com/thu-ml/SageAttention.git /tmp/SageAttention
+
+  if env -u PIP_REQUIRE_HASHES -u PIP_BUILD_CONSTRAINT pip install --no-build-isolation -e /tmp/SageAttention 2>&1 | tee /workspace/logs/sage_build.log; then
+    echo "SageAttention built OK"
+    return 0
+  else
+    echo "SageAttention build FAILED — see /workspace/logs/sage_build.log" >&2
+    return 1
+  fi
+}
+
 ########################################
 # GPU detection
 ########################################
@@ -218,6 +261,7 @@ if [ ! -f "$SETUP_MARKER" ] || [ "$FORCE_SETUP" = "1" ]; then
 
   # 3) Python deps
   pip install -e .
+  install_sage_from_source
   pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu128
   pip install protobuf six huggingface_hub==0.34.0
   pip install hf_transfer hf_xet || true
