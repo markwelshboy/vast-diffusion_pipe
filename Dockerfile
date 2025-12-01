@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
    CMAKE_BUILD_PARALLEL_LEVEL=8
 
 # Faster transfer of models from the hub to the container
-ENV HF_HUB_ENABLE_HF_TRANSFER="1"
+#ENV HF_HUB_ENABLE_HF_TRANSFER="1"
 # Set Default Python Version
 ENV PYTHON_VERSION="3.12"
 

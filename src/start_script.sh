@@ -2,9 +2,8 @@
 
 # Determine which branch to clone based on environment variables
 BRANCH="main"  # Default branch
-is_dev=${DEV_MODE:-"false"}
 
-if [ "$is_dev" == "true" ]; then
+if [ ${DEV_MODE:-"false"} == "true" ]; then
     BRANCH="dev"
     echo "Development mode enabled. Cloning dev branch..."
 elif [ -n "$git_branch" ]; then
