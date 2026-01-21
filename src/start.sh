@@ -84,6 +84,53 @@ detect_cuda_arch() {
 # -1) Wire up .env and helpers
 #----------------------------------------------
 
+# --------------------------------------------------
+# SSH setup: authorized_keys from env, start sshd
+# --------------------------------------------------
+setup_ssh() {
+  # Support a few env var names for the public key
+  local pub="${SSH_PUBLIC_KEY:-${PUBLIC_KEY:-}}"
+
+  if [[ -z "$pub" ]]; then
+    echo "[ssh] No SSH_PUBLIC_KEY/PUBLIC_KEY set; skipping sshd."
+    return 0
+  fi
+
+  if ! command -v sshd >/dev/null 2>&1; then
+    echo "[ssh] openssh-server not installed in image; cannot start sshd."
+    return 0
+  fi
+
+  echo "[ssh] Setting up sshd with provided public key..."
+
+  mkdir -p /var/run/sshd
+
+  mkdir -p /root/.ssh
+  chmod 700 /root/.ssh
+  printf '%s\n' "$pub" > /root/.ssh/authorized_keys
+  chmod 600 /root/.ssh/authorized_keys
+
+  # Harden a bit: disable password auth, allow root only with keys
+  if [[ -f /etc/ssh/sshd_config ]]; then
+    sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+  fi
+
+  if [[ ! -f /etc/ssh/ssh_host_ed25519_key && ! -f /etc/ssh/ssh_host_rsa_key ]]; then
+    echo "[ssh] Generating SSH host keys..."
+    ssh-keygen -A
+  fi
+  
+  # Start sshd in the background, logging to stdout
+  /usr/sbin/sshd -D -e &
+  echo "[ssh] sshd started."
+  sleep 5
+}
+
+setup_ssh
+
+echo "Sleeping"
+
 sleep infinity
 
 SCRIPT_DIR="/workspace/pod-runtime"
