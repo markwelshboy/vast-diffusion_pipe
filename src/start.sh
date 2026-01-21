@@ -84,6 +84,8 @@ detect_cuda_arch() {
 # -1) Wire up .env and helpers
 #----------------------------------------------
 
+sleep infinity
+
 SCRIPT_DIR="/workspace/pod-runtime"
 ENVIRONMENT="${ENVIRONMENT:-$SCRIPT_DIR/.env}"
 HELPERS="${HELPERS:-$SCRIPT_DIR/helpers.sh}"
