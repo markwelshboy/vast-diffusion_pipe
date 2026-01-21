@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+touch ~/.no_auto_tmux
+umask 0022
+
 # Determine which branch to clone based on environment variables
 BRANCH="main"  # Default branch
 

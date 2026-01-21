@@ -1,85 +1,5 @@
 #!/usr/bin/env bash
 
-# Execute script if exists
-execute_script() {
-    local script_path=$1
-    local script_msg=$2
-    if [[ -f ${script_path} ]]; then
-        echo "${script_msg}"
-        bash ${script_path}
-    fi
-}
-
-# Setup ssh
-setup_ssh() {
-    if [[ $PUBLIC_KEY ]]; then
-        echo "Setting up SSH..."
-        mkdir -p ~/.ssh
-        echo "$PUBLIC_KEY" >> ~/.ssh/authorized_keys
-        chmod 700 -R ~/.ssh
-
-         if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-            ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -q -N ''
-            echo "RSA key fingerprint:"
-            ssh-keygen -lf /etc/ssh/ssh_host_rsa_key.pub
-        fi
-
-        if [ ! -f /etc/ssh/ssh_host_dsa_key ]; then
-            ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -q -N ''
-            echo "DSA key fingerprint:"
-            ssh-keygen -lf /etc/ssh/ssh_host_dsa_key.pub
-        fi
-
-        if [ ! -f /etc/ssh/ssh_host_ecdsa_key ]; then
-            ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -q -N ''
-            echo "ECDSA key fingerprint:"
-            ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub
-        fi
-
-        if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
-            ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -q -N ''
-            echo "ED25519 key fingerprint:"
-            ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
-        fi
-
-        service ssh start
-
-        echo "SSH host keys:"
-        for key in /etc/ssh/*.pub; do
-            echo "Key: $key"
-            ssh-keygen -lf $key
-        done
-    fi
-}
-
-export_env_vars() {
-    echo "Exporting environment variables..."
-
-    local outfile="/etc/pod_environment"
-    : > "$outfile"
-
-    # Keep interesting pod-related vars:
-    #  - VAST_* / RUNPOD_*
-    #  - HF_* and cache-related vars
-    #  - ports for all the UIs
-    #  - PATH for convenience
-    printenv | grep -E '^(VAST_|RUNPOD_|HF_|NETWORK_VOLUME=|PIP_CACHE_DIR=|UV_CACHE_DIR=|VIRTUALENV_OVERRIDE_APP_DATA=|CTRL_PNL_PORT=|FLUXGYM_PORT=|DIFFUSION_PIPE_UI_PORT=|KOHYA_UI_PORT=|TENSORBOARD_PORT=|COMFYUI_PORT=|JUPYTER_PORT=|PATH=|_=)' \
-    | while IFS='=' read -r key val; do
-        printf 'export %s=%q\n' "$key" "$val"
-    done >> "$outfile"
-
-    if ! grep -q 'source /etc/pod_environment' ~/.bashrc 2>/dev/null; then
-        echo 'source /etc/pod_environment' >> ~/.bashrc
-    fi
-}
-
-# Log all output to a file *and* to the container log
-LOG_FILE=/var/log/start.log
-mkdir -p "$(dirname "$LOG_FILE")"
-exec > >(tee -a "$LOG_FILE") 2>&1
-
-setup_ssh
-
 # Use libtcmalloc for better memory management
 TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\d" | head -n 1)"
 export LD_PRELOAD="${TCMALLOC}"
@@ -97,8 +17,6 @@ fi
 export NETWORK_VOLUME
 
 echo "cd $NETWORK_VOLUME" >> /root/.bashrc
-
-export_env_vars
 
 #cd "$NETWORK_VOLUME/diffusion_pipe_working_folder/diffusion-pipe" || exit 1
 #git pull || true
@@ -161,6 +79,32 @@ detect_cuda_arch() {
             ;;
     esac
 }
+
+#----------------------------------------------
+# -1) Wire up .env and helpers
+#----------------------------------------------
+
+SCRIPT_DIR="/workspace/pod-runtime"
+ENVIRONMENT="${ENVIRONMENT:-$SCRIPT_DIR/.env}"
+HELPERS="${HELPERS:-$SCRIPT_DIR/helpers.sh}"
+
+if [[ ! -f "$ENVIRONMENT" ]]; then
+  echo "[fatal] .env not found at: $ENVIRONMENT" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$ENVIRONMENT"
+
+if [[ ! -f "$HELPERS" ]]; then
+  echo "[fatal] helpers.sh not found at: $HELPERS" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$HELPERS"
+
+setup_ssh
+
+#----------------------------------------------
 
 # Install flash-attn
 # Strategy: Try prebuilt wheel first (fast) in foreground, fall back to building from source in background if needed
@@ -291,15 +235,16 @@ jupyter-lab --ip=0.0.0.0 --allow-root --no-browser \
     --notebook-dir="$NETWORK_VOLUME" &
 
 # Move repository files to the working directory
-if [ -d "/tmp/vast-diffusion_pipe" ]; then
+if [ -d "/tmp/runpod-diffusion_pipe" ]; then
     # Move the entire repository to working directory
-    mv /tmp/vast-diffusion_pipe "$NETWORK_VOLUME/"
-    mv "$NETWORK_VOLUME/vast-diffusion_pipe/Captioning" "$NETWORK_VOLUME/"
-    mv "$NETWORK_VOLUME/vast-diffusion_pipe/wan2.2_lora_training" "$NETWORK_VOLUME/"
+    mv /tmp/runpod-diffusion_pipe "$NETWORK_VOLUME/"
+    mv "$NETWORK_VOLUME/runpod-diffusion_pipe/Captioning" "$NETWORK_VOLUME/"
+    mv "$NETWORK_VOLUME/runpod-diffusion_pipe/wan2.2_lora_training" "$NETWORK_VOLUME/"
     
     # Only move Qwen folder if IS_DEV is set to true
     if [ "$IS_DEV" == "true" ]; then
-        mv "$NETWORK_VOLUME/vast-diffusion_pipe/qwen_image_musubi_training" "$NETWORK_VOLUME/" 2>/dev/null || true
+        mv "$NETWORK_VOLUME/runpod-diffusion_pipe/qwen_image_musubi_training" "$NETWORK_VOLUME/" 2>/dev/null || true
+        mv "$NETWORK_VOLUME/runpod-diffusion_pipe/z_image_musubi_training" "$NETWORK_VOLUME/" 2>/dev/null || true
     fi
 
 
@@ -323,7 +268,7 @@ if [ -d "/tmp/vast-diffusion_pipe" ]; then
 
 
     echo "Updating TOML file paths..."
-    TOML_DIR="$NETWORK_VOLUME/vast-diffusion_pipe/toml_files"
+    TOML_DIR="$NETWORK_VOLUME/runpod-diffusion_pipe/toml_files"
     if [ -d "$TOML_DIR" ]; then
         # Update paths in TOML files to use NETWORK_VOLUME
         for toml_file in "$TOML_DIR"/*.toml; do
@@ -337,9 +282,16 @@ if [ -d "/tmp/vast-diffusion_pipe" ]; then
                 sed -i "s|ckpt_path = '/Wan/|ckpt_path = '$NETWORK_VOLUME/models/Wan/|g" "$toml_file"
                 sed -i "s|checkpoint_path = '/models/|checkpoint_path = '$NETWORK_VOLUME/models/|g" "$toml_file"
                 sed -i "s|output_dir = '/data/|output_dir = '$NETWORK_VOLUME/training_outputs/|g" "$toml_file"
+                sed -i "s|output_dir = '/training_outputs/|output_dir = '$NETWORK_VOLUME/training_outputs/|g" "$toml_file"
 
                 # Handle commented paths too
                 sed -i "s|#transformer_path = '/models/|#transformer_path = '$NETWORK_VOLUME/models/|g" "$toml_file"
+
+                # Z-Image model paths
+                sed -i "s|diffusion_model = '/models/|diffusion_model = '$NETWORK_VOLUME/models/|g" "$toml_file"
+                sed -i "s|vae = '/models/|vae = '$NETWORK_VOLUME/models/|g" "$toml_file"
+                sed -i "s|{path = '/models/|{path = '$NETWORK_VOLUME/models/|g" "$toml_file"
+                sed -i "s|merge_adapters = \['/models/|merge_adapters = ['$NETWORK_VOLUME/models/|g" "$toml_file"
 
                 echo "Updated paths in: $(basename "$toml_file")"
             fi
@@ -347,26 +299,26 @@ if [ -d "/tmp/vast-diffusion_pipe" ]; then
     fi
 
     # Move training scripts and utilities
-    if [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/interactive_start_training.sh" ]; then
-        mv "$NETWORK_VOLUME/vast-diffusion_pipe/interactive_start_training.sh" "$NETWORK_VOLUME/"
+    if [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/interactive_start_training.sh" ]; then
+        mv "$NETWORK_VOLUME/runpod-diffusion_pipe/interactive_start_training.sh" "$NETWORK_VOLUME/"
         chmod +x "$NETWORK_VOLUME/interactive_start_training.sh"
     fi
 
-    if [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/HowToUse.txt" ]; then
-        mv "$NETWORK_VOLUME/vast-diffusion_pipe/HowToUse.txt" "$NETWORK_VOLUME/"
+    if [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/HowToUse.txt" ]; then
+        mv "$NETWORK_VOLUME/runpod-diffusion_pipe/HowToUse.txt" "$NETWORK_VOLUME/"
     fi
 
     # Set up send_lora.sh script
-    if [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/send_lora.sh" ]; then
-        chmod +x "$NETWORK_VOLUME/vast-diffusion_pipe/send_lora.sh"
-        cp "$NETWORK_VOLUME/vast-diffusion_pipe/send_lora.sh" /usr/local/bin/
+    if [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/send_lora.sh" ]; then
+        chmod +x "$NETWORK_VOLUME/runpod-diffusion_pipe/send_lora.sh"
+        cp "$NETWORK_VOLUME/runpod-diffusion_pipe/send_lora.sh" /usr/local/bin/
     fi
 
     # Clean up examples and move dataset.toml
     if [ -d "$NETWORK_VOLUME/diffusion_pipe/examples" ]; then
         rm -rf "$NETWORK_VOLUME/diffusion_pipe/examples"/*
-        if [ -f "$NETWORK_VOLUME/vast-diffusion_pipe/dataset.toml" ]; then
-            mv "$NETWORK_VOLUME/vast-diffusion_pipe/dataset.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
+        if [ -f "$NETWORK_VOLUME/runpod-diffusion_pipe/dataset.toml" ]; then
+            mv "$NETWORK_VOLUME/runpod-diffusion_pipe/dataset.toml" "$NETWORK_VOLUME/diffusion_pipe/examples/"
         fi
     fi
 fi
@@ -394,11 +346,6 @@ pip install transformers -U
 
 echo "Installing huggingface-cli..."
 pip install --upgrade "huggingface_hub[cli]"
-
-#echo "Installing hf_transfer..."
-#pip install "hf_transfer"
-
-unset HF_HUB_ENABLE_HF_TRANSFER
 
 echo "Upgrading peft package..."
 pip install --upgrade "peft>=0.17.0"

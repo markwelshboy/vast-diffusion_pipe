@@ -1,49 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-install_sage_from_source() {
-  # CC via torch
-  local CC_TORCH
-  CC_TORCH="$("$PY" - << 'PY'
-import torch
-maj,minr = torch.cuda.get_device_capability(0) if torch.cuda.is_available() else (0,0)
-print(f"{maj}.{minr}")
-PY
-  )"
-  echo "Detected GPU compute capability: ${CC_TORCH}" >&2
-
-  # Toolchain for CUDA 12.x
-  unset CC CXX SAGE_CUDA_ARCH_LIST SAGE_GENCODE CUDA_ARCH_LIST
-  if ! command -v g++-12 >/dev/null; then
-    apt-get update && apt-get install -y gcc-12 g++-12
-  fi
-  export CC=/usr/bin/gcc-12
-  export CXX=/usr/bin/g++-12
-
-  # Arch list
-  case "$CC_TORCH" in
-    12.*) export TORCH_CUDA_ARCH_LIST="12.0;8.9;8.6;8.0" ;;
-    9.*)  export TORCH_CUDA_ARCH_LIST="9.0;8.9;8.6;8.0"  ;;
-    8.9)  export TORCH_CUDA_ARCH_LIST="8.9;8.6;8.0"      ;;
-    8.*)  export TORCH_CUDA_ARCH_LIST="8.6;8.0"          ;;
-    *)    export TORCH_CUDA_ARCH_LIST="8.0"              ;;
-  esac
-  echo "TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}" >&2
-
-  # Clean + build (NO build isolation, so setup can import torch)
-  echo "Clonging SageAttention, repo=https://github.com/thu-ml/SageAttention.git" >&2
-  rm -rf /tmp/SageAttention
-  git clone https://github.com/thu-ml/SageAttention.git /tmp/SageAttention
-
-  if env -u PIP_REQUIRE_HASHES -u PIP_BUILD_CONSTRAINT pip install --no-build-isolation -e /tmp/SageAttention 2>&1 | tee /workspace/logs/sage_build.log; then
-    echo "SageAttention built OK"
-    return 0
-  else
-    echo "SageAttention build FAILED — see /workspace/logs/sage_build.log" >&2
-    return 1
-  fi
-}
-
 ########################################
 # GPU detection
 ########################################
@@ -194,27 +151,25 @@ MODELS_DIR="$WORKDIR/models"
 
 WAN_VAE="$MODELS_DIR/vae/split_files/vae/wan_2.1_vae.safetensors"
 WAN_T5="$MODELS_DIR/text_encoders/models_t5_umt5-xxl-enc-bf16.pth"
-WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp16.safetensors"
-WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp16.safetensors"
-#WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors"
-#WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
+WAN_DIT_HIGH="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors"
+WAN_DIT_LOW="$MODELS_DIR/diffusion_models/split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors"
 
 OUT_HIGH="$WORKDIR/output/high"
 OUT_LOW="$WORKDIR/output/low"
 TITLE_HIGH="${TITLE_HIGH:-Wan2.2_model_lora}"
 TITLE_LOW="${TITLE_LOW:-Wan2.2_model_lora}"
-AUTHOR="${AUTHOR:-markwelshboy}"
+AUTHOR="${AUTHOR:-HearmemanAI}"
 
 SETUP_MARKER="$REPO_DIR/.setup_done"
 
 # Config-driven knobs (with safe defaults)
-LORA_RANK="${LORA_RANK:-32}"
+LORA_RANK="${LORA_RANK:-16}"
 MAX_EPOCHS="${MAX_EPOCHS:-100}"
 SAVE_EVERY="${SAVE_EVERY:-25}"
 SEED_HIGH="${SEED_HIGH:-41}"
 SEED_LOW="${SEED_LOW:-42}"
-LEARNING_RATE="${LEARNING_RATE:-2e-4}"
-DATASET_TYPE="${DATASET_TYPE:-image}"
+LEARNING_RATE="${LEARNING_RATE:-3e-4}"
+DATASET_TYPE="${DATASET_TYPE:-video}"
 
 # Video/image specific defaults if missing
 CAPTION_EXT="${CAPTION_EXT:-.txt}"
@@ -261,7 +216,6 @@ if [ ! -f "$SETUP_MARKER" ] || [ "$FORCE_SETUP" = "1" ]; then
 
   # 3) Python deps
   pip install -e .
-  install_sage_from_source
   pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu128
   pip install protobuf six huggingface_hub==0.34.0
   pip install hf_transfer hf_xet || true
@@ -273,14 +227,10 @@ if [ ! -f "$SETUP_MARKER" ] || [ "$FORCE_SETUP" = "1" ]; then
     --local-dir "$MODELS_DIR/text_encoders"
   hf download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/vae/wan_2.1_vae.safetensors \
     --local-dir "$MODELS_DIR/vae"
-  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp16.safetensors \
+  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors \
     --local-dir "$MODELS_DIR/diffusion_models"
-  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp16.safetensors \
+  hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors \
     --local-dir "$MODELS_DIR/diffusion_models"
-  #hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_high_noise_14B_fp16.safetensors \
-  #  --local-dir "$MODELS_DIR/diffusion_models"
-  #hf download Comfy-Org/Wan_2.2_ComfyUI_Repackaged split_files/diffusion_models/wan2.2_t2v_low_noise_14B_fp16.safetensors \
-  #  --local-dir "$MODELS_DIR/diffusion_models"
 
   touch "$SETUP_MARKER"
   echo ">>> Setup complete."
@@ -374,24 +324,21 @@ mkdir -p "$OUT_HIGH" "$OUT_LOW"
 echo ">>> Launching training with:"
 echo "    rank=$LORA_RANK, max_epochs=$MAX_EPOCHS, save_every=$SAVE_EVERY, lr=$LEARNING_RATE"
 
-#FP8="--fp8_base"
-FP8=""
-
 COMMON_FLAGS=(
-  --task i2v-A14B
-  --vae "${WAN_VAE}"
-  --t5 "${WAN_T5}"
-  --dataset_config "${DATASET_TOML}"
-  --xformers --mixed_precision fp16 "${FP8}"
+  --task t2v-A14B
+  --vae "$WAN_VAE"
+  --t5 "$WAN_T5"
+  --dataset_config "$DATASET_TOML"
+  --xformers --mixed_precision fp16 --fp8_base
   --optimizer_type adamw --optimizer_args weight_decay=0.1
-  --learning_rate "${LEARNING_RATE}"
+  --learning_rate "$LEARNING_RATE"
   --gradient_checkpointing --gradient_accumulation_steps 1
   --max_data_loader_n_workers 2
-  --network_module networks.lora_wan --network_dim "${LORA_RANK}" --network_alpha "${LORA_RANK}"
+  --network_module networks.lora_wan --network_dim "$LORA_RANK" --network_alpha "$LORA_RANK"
   --timestep_sampling shift --discrete_flow_shift 1.0
   --max_grad_norm 0
   --lr_scheduler polynomial --lr_scheduler_power 8 --lr_scheduler_min_lr_ratio "5e-5"
-  --max_train_epochs "${MAX_EPOCHS}" --save_every_n_epochs "${SAVE_EVERY}"
+  --max_train_epochs "$MAX_EPOCHS" --save_every_n_epochs "$SAVE_EVERY"
 )
 
 if [ "${GPU_COUNT}" -ge 2 ]; then
