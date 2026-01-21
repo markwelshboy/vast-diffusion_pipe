@@ -129,10 +129,6 @@ setup_ssh() {
 
 setup_ssh
 
-echo "Sleeping"
-
-sleep infinity
-
 SCRIPT_DIR="/workspace/pod-runtime"
 ENVIRONMENT="${ENVIRONMENT:-$SCRIPT_DIR/.env}"
 HELPERS="${HELPERS:-$SCRIPT_DIR/helpers.sh}"
@@ -150,8 +146,6 @@ if [[ ! -f "$HELPERS" ]]; then
 fi
 # shellcheck source=/dev/null
 source "$HELPERS"
-
-setup_ssh
 
 #----------------------------------------------
 
